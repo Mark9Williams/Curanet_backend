@@ -1,14 +1,17 @@
 # Import necessary modules and models
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from .models import *
-
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 # Define a view function for the home page
 def home(request):
-    return render(request, 'authentication/home.html')
+    if not request.user.is_authenticated:
+        return HttpResponseRedirect(reverse("login_page"))
+    return render(request, "authentication/home.html")
 
 # Define a view function for the login page
 def login_page(request):
@@ -29,11 +32,11 @@ def login_page(request):
         if user is None:
             # Display an error message if authentication fails (invalid password)
             messages.error(request, "Invalid Password")
-            return redirect('authentication/login/')
+            return HttpResponseRedirect(reverse("login_page"))
         else:
             # Log in the user and redirect to the home page upon successful login
             login(request, user)
-            return redirect('authenticaation/home/')
+            return HttpResponseRedirect(reverse("home"))
     
     # Render the login page template (GET request)
     return render(request, 'authentication/login.html')
@@ -53,7 +56,7 @@ def register_page(request):
         if user.exists():
             # Display an information message if the username is taken
             messages.info(request, "Username already taken!")
-            return redirect('authentication/register/')
+            return HttpResponseRedirect(reverse("register"))
         
         # Create a new User object with the provided information
         user = User.objects.create_user(
@@ -68,7 +71,13 @@ def register_page(request):
         
         # Display an information message indicating successful account creation
         messages.info(request, "Account created Successfully!")
-        return redirect('authentication/register/')
+        return HttpResponseRedirect(reverse("register"))
     
     # Render the registration page template (GET request)
     return render(request, 'authentication/register.html')
+
+def logout_user(request):
+    logout(request)
+    return render(request, "authentication/login.html", {
+        "massage": "Logged out."
+    })
